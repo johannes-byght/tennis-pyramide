@@ -1,6 +1,6 @@
-# sixseven · Tennis
+# Tennis Pyramide
 
-Mobile-first Vereins-Tennis-App im Stil von Kickbase. Spieler fordern sich heraus, spielen Matches, klettern in der Rangliste — mit Elo, XP, Levels und Achievements. Datenschutz steht im Zentrum: Spieler melden sich nur mit Nickname an, kein Klarname, keine E-Mail.
+Mobile-first Vereins-Tennis-App im Stil von Kickbase. Spieler fordern sich heraus, spielen Matches, klettern in der Pyramide nach oben — mit XP, Levels und Achievements. Datenschutz steht im Zentrum: Spieler melden sich nur mit Nickname an, kein Klarname, keine E-Mail.
 
 **Stack:** Next.js 16 (App Router) · React 19 · TypeScript · Tailwind v4 · Supabase (Postgres + Auth + Realtime) · PWA.
 

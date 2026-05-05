@@ -31,7 +31,7 @@ export async function GET() {
   return new NextResponse(JSON.stringify(payload, null, 2), {
     headers: {
       "content-type": "application/json",
-      "content-disposition": `attachment; filename="sixseven-export-${user.id}.json"`,
+      "content-disposition": `attachment; filename="tennis-pyramide-export-${user.id}.json"`,
     },
   });
 }

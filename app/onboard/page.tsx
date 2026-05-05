@@ -17,7 +17,7 @@ export default async function OnboardPage() {
     <main className="mx-auto max-w-md px-5 pt-12 pb-24">
       <div className="text-center">
         <div className="text-5xl mb-2">🎾</div>
-        <h1 className="font-display text-4xl tracking-tight">sixseven</h1>
+        <h1 className="font-display text-4xl tracking-tight">Tennis Pyramide</h1>
         <p className="mt-2 text-muted">Vereins-Tennis. Challenge. Rangliste. Spaß.</p>
       </div>
 

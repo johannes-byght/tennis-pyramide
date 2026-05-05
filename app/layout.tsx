@@ -15,13 +15,13 @@ const display = Fraunces({
 });
 
 export const metadata: Metadata = {
-  title: "sixseven · Tennis",
+  title: "Tennis Pyramide",
   description: "Vereins-Tennis-App: Challenges, Rangliste, Achievements.",
-  applicationName: "sixseven",
+  applicationName: "Tennis Pyramide",
   manifest: "/manifest.webmanifest",
   appleWebApp: {
     capable: true,
-    title: "sixseven",
+    title: "Pyramide",
     statusBarStyle: "default",
   },
   icons: {

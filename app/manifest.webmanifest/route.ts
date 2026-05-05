@@ -2,8 +2,8 @@ import { NextResponse } from "next/server";
 
 export function GET() {
   return NextResponse.json({
-    name: "sixseven · Tennis",
-    short_name: "sixseven",
+    name: "Tennis Pyramide",
+    short_name: "Pyramide",
     description: "Vereins-Tennis-App: Challenges, Rangliste, Achievements.",
     start_url: "/",
     display: "standalone",
