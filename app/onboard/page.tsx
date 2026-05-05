@@ -1,18 +1,12 @@
 import Link from "next/link";
-import { redirect } from "next/navigation";
 import { OnboardForm } from "./onboard-form";
-import { createClient } from "@/lib/supabase/server";
+
+// Kein server-side redirect-if-profile-exists hier: nach erfolgreichem Redeem
+// soll der User auf der Onboard-Page bleiben können um seinen Anmelde-Code zu
+// kopieren. Returning-User mit Profil landen via "/" (root page) korrekt im
+// Feed/Coach-Dashboard.
 
 export default async function OnboardPage() {
-  const supabase = await createClient();
-  const {
-    data: { user },
-  } = await supabase.auth.getUser();
-  if (user) {
-    const { data: profile } = await supabase.from("profiles").select("id").eq("id", user.id).maybeSingle();
-    if (profile) redirect("/feed");
-  }
-
   return (
     <main className="mx-auto max-w-md px-5 pt-12 pb-24">
       <div className="text-center">
