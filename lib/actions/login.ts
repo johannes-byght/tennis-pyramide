@@ -12,18 +12,29 @@ function syntheticEmail(userId: string): string {
 }
 
 export async function loginWithCodeAction(formData: FormData): Promise<LoginResult> {
-  const raw = (formData.get("code") as string | null)?.trim() ?? "";
-  if (raw.length < 8) return { ok: false, error: "Code zu kurz." };
+  const rawInput = (formData.get("code") as string | null)?.trim() ?? "";
+  // Normalize: uppercase + strip all whitespace inside (user might paste with
+  // extra spaces or type without dashes).
+  const compact = rawInput.toUpperCase().replace(/\s+/g, "");
+  if (compact.length < 8) return { ok: false, error: "Code zu kurz." };
 
-  const codeHash = await hashRecoveryCode(raw);
+  // Codes are issued in the format AAAA-BBBB-CCCC-DDDD. If the user typed it
+  // without dashes (16 chars), reinsert them so the hash matches.
+  const normalized =
+    compact.length === 16 && !compact.includes("-")
+      ? `${compact.slice(0, 4)}-${compact.slice(4, 8)}-${compact.slice(8, 12)}-${compact.slice(12, 16)}`
+      : compact;
+
+  const codeHash = await hashRecoveryCode(normalized);
 
   const admin = await createServiceClient();
-  const { data: profile } = await admin
+  const { data: profile, error: lookupErr } = await admin
     .from("profiles")
     .select("id, role")
     .eq("recovery_code_hash", codeHash)
     .maybeSingle();
 
+  if (lookupErr) return { ok: false, error: `Lookup fehlgeschlagen: ${lookupErr.message}` };
   if (!profile) return { ok: false, error: "Code ungültig." };
 
   const email = syntheticEmail(profile.id);
@@ -34,7 +45,7 @@ export async function loginWithCodeAction(formData: FormData): Promise<LoginResu
   // user out mid-flow during onboarding.
   const { error: adminErr } = await admin.auth.admin.updateUserById(profile.id, {
     email,
-    password: raw,
+    password: normalized,
     email_confirm: true,
   });
   if (adminErr) return { ok: false, error: "Login fehlgeschlagen. Code prüfen." };
@@ -42,7 +53,7 @@ export async function loginWithCodeAction(formData: FormData): Promise<LoginResu
   const supabase = await createClient();
   await supabase.auth.signOut();
 
-  const { error } = await supabase.auth.signInWithPassword({ email, password: raw });
+  const { error } = await supabase.auth.signInWithPassword({ email, password: normalized });
   if (error) return { ok: false, error: "Login fehlgeschlagen. Code prüfen." };
 
   return { ok: true, role: profile.role };
