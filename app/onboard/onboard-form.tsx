@@ -21,10 +21,10 @@ export function OnboardForm() {
       <Card className="mt-8 animate-pop-in">
         <CardBody className="space-y-4 text-center">
           <div className="text-5xl">🔐</div>
-          <h2 className="font-display text-2xl">Dein Wiederherstellungs-Code</h2>
+          <h2 className="font-display text-2xl">Dein Anmelde-Code</h2>
           <p className="text-sm text-muted">
-            Schreibe ihn auf oder mach einen Screenshot. Damit kommst du wieder rein, falls du das Handy wechselst. Wir
-            speichern ihn nicht im Klartext.
+            Schreibe ihn auf oder mach einen Screenshot. Mit diesem Code meldest du dich auf einem anderen Gerät an.
+            Wir speichern ihn nicht im Klartext, also nicht verlieren.
           </p>
           <div className="rounded-card bg-court-50 dark:bg-court-800/30 border border-court-200 dark:border-court-700 px-5 py-4 font-mono text-xl tracking-wider select-all">
             {recoveryCode}

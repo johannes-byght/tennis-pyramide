@@ -1,3 +1,4 @@
+import Link from "next/link";
 import { redirect } from "next/navigation";
 import { OnboardForm } from "./onboard-form";
 import { createClient } from "@/lib/supabase/server";
@@ -21,6 +22,13 @@ export default async function OnboardPage() {
       </div>
 
       <OnboardForm />
+
+      <p className="mt-8 text-center text-xs text-muted">
+        Schon dabei?{" "}
+        <Link className="underline underline-offset-4" href="/login">
+          Mit Anmelde-Code einloggen
+        </Link>
+      </p>
     </main>
   );
 }

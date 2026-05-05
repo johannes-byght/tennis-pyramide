@@ -7,7 +7,7 @@ Mobile-first Vereins-Tennis-App im Stil von Kickbase. Spieler fordern sich herau
 ## Features (MVP)
 
 - Vereins-Onboarding über Einladungscode (Trainer generiert)
-- Anonymer Spieler-Login + persönlicher Recovery-Code
+- Anonymer Spieler-Login + persönlicher Anmelde-Code für Multi-Device
 - Challenge-Flow: herausfordern → annehmen → Match eintragen → beidseitig bestätigen
 - Elo-Rating mit Live-Rangliste pro Saison
 - XP, Level und kuratierte Achievements
@@ -66,7 +66,7 @@ insert into invite_codes (code, club_id, role, max_uses)
 select 'COACH-START', id, 'coach', 1 from clubs where slug = 'mein-verein';
 ```
 
-Dann `/onboard` aufrufen, Code `COACH-START` einlösen, Nickname wählen, Recovery-Code aufschreiben. Das Profil bekommt automatisch `role='coach'` und `is_admin=true`. Im Trainer-Dashboard generierst du danach Spieler-Codes.
+Dann `/onboard` aufrufen, Code `COACH-START` einlösen, Nickname wählen, Anmelde-Code aufschreiben. Das Profil bekommt automatisch `role='coach'` und `is_admin=true`. Im Trainer-Dashboard generierst du danach Spieler-Codes.
 
 ### 6. Lokal starten
 
@@ -133,7 +133,7 @@ proxy.ts                     # Auth-Routen-Schutz (vorher: middleware.ts)
 ## Datenschutz
 
 - Spieler-Accounts sind **anonyme** Supabase-Auth-Sessions, an Einladungscode + Nickname gebunden.
-- Recovery: Beim Onboarding wird ein 16-stelliger Code angezeigt, dessen SHA-256-Hash gespeichert wird. Damit kann später der Account zurückgeholt werden (Recovery-Flow ist im MVP noch nicht implementiert — siehe Roadmap).
+- Anmelde-Code: Beim Onboarding wird ein 16-stelliger Code angezeigt, dessen SHA-256-Hash sowie eine synthetische E-Mail (`tp-<uuid>@anon.tennis-pyramide.app`) am Auth-User gesetzt werden. Über `/login` kann sich der User damit auf einem anderen Gerät anmelden — der Klartext-Code wird **nicht** gespeichert.
 - Trainer-Accounts haben eine E-Mail (verantwortliche Person nach DSGVO).
 - Row-Level-Security stellt sicher, dass nur Mitglieder des eigenen Vereins Daten sehen.
 - Datenexport (`/api/account/export`) liefert JSON mit allen personenbezogenen Daten.
@@ -141,7 +141,6 @@ proxy.ts                     # Auth-Routen-Schutz (vorher: middleware.ts)
 
 ## Roadmap (post-MVP)
 
-- Recovery-Flow für vergessene Spieler-Codes
 - Web-Push-Notifications (VAPID)
 - Skill-Challenges mit Foto/Video-Upload
 - Squads (Teams im Verein)

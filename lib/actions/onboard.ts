@@ -1,13 +1,17 @@
 "use server";
 
 import { redirect } from "next/navigation";
-import { createClient } from "@/lib/supabase/server";
+import { createClient, createServiceClient } from "@/lib/supabase/server";
 import { generateRecoveryCode, hashRecoveryCode } from "@/lib/utils";
 import { onboardSchema } from "@/lib/validation/forms";
 
 export type OnboardResult =
   | { ok: true; recoveryCode: string; role: "player" | "coach" }
   | { ok: false; error: string };
+
+function syntheticEmail(userId: string): string {
+  return `tp-${userId}@anon.tennis-pyramide.app`;
+}
 
 export async function redeemInviteAction(formData: FormData): Promise<OnboardResult> {
   const parsed = onboardSchema.safeParse({
@@ -53,8 +57,20 @@ export async function redeemInviteAction(formData: FormData): Promise<OnboardRes
     return { ok: false, error: map[key] ?? error.message };
   }
 
-  const profile = data as { role: "player" | "coach" } | null;
+  const profile = data as { id: string; role: "player" | "coach" } | null;
   const role = profile?.role ?? "player";
+
+  // Set synthetic email + code-as-password so the user can re-login on a new device
+  // by entering just the Anmelde-Code (we look up by hash → derive email → signInWithPassword).
+  if (profile) {
+    const admin = await createServiceClient();
+    await admin.auth.admin.updateUserById(profile.id, {
+      email: syntheticEmail(profile.id),
+      password: recoveryCode,
+      email_confirm: true,
+    });
+  }
+
   return { ok: true, recoveryCode, role };
 }
 
