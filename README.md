@@ -49,26 +49,24 @@ npx supabase db push
 
 In Supabase: **Authentication → Providers → Anonymous Sign-Ins → Enable**. Diese Methode wird für Spieler-Accounts verwendet (keine E-Mail nötig).
 
-### 5. Trainer-Account erstellen
+### 5. Trainer-Account anlegen (Bootstrap)
 
-1. App im Browser öffnen → `/coach/sign-in`
-2. E-Mail eingeben → Magic-Link in der Mail klicken
-3. Im SQL-Editor manuell deinen Trainer-Eintrag setzen (das Onboarding via Code übernimmt das beim ersten Verein nicht):
+Da Trainer-Accounts genauso über Einladungscodes laufen wie Spieler, musst du den initialen Code per SQL einmal selbst setzen — danach läuft alles über die UI.
 
 ```sql
--- Ersetze YOUR_AUTH_UID mit der UID aus auth.users (siehe Supabase Authentication-Tab)
-insert into clubs (id, name, slug)
-  values (gen_random_uuid(), 'Mein Verein', 'mein-verein');
-
-insert into profiles (id, club_id, nickname, avatar_seed, role)
-  select 'YOUR_AUTH_UID', id, 'TrainerNick', 'TrainerNick', 'coach'
-  from clubs where slug = 'mein-verein';
-
+with c as (
+  insert into clubs (name, slug)
+  values ('Mein Verein', 'mein-verein')
+  returning id
+)
 insert into seasons (club_id, name, is_active)
-  select id, 'Saison 2026', true from clubs where slug = 'mein-verein';
+select id, 'Saison 2026', true from c;
+
+insert into invite_codes (code, club_id, role, max_uses)
+select 'COACH-START', id, 'coach', 1 from clubs where slug = 'mein-verein';
 ```
 
-Danach kannst du im Trainer-Dashboard Codes generieren, die Spieler über `/onboard` einlösen.
+Dann `/onboard` aufrufen, Code `COACH-START` einlösen, Nickname wählen, Recovery-Code aufschreiben. Das Profil bekommt automatisch `role='coach'` und `is_admin=true`. Im Trainer-Dashboard generierst du danach Spieler-Codes.
 
 ### 6. Lokal starten
 

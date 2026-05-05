@@ -33,8 +33,6 @@ export async function proxy(request: NextRequest) {
   const isPublic =
     pathname === "/" ||
     pathname.startsWith("/onboard") ||
-    pathname.startsWith("/debug") ||
-    pathname.startsWith("/coach/sign-in") ||
     pathname.startsWith("/_next") ||
     pathname.startsWith("/favicon") ||
     pathname.startsWith("/icons") ||
@@ -44,7 +42,6 @@ export async function proxy(request: NextRequest) {
   if (!user && !isPublic) {
     const url = request.nextUrl.clone();
     url.pathname = "/onboard";
-    url.searchParams.set("why", "proxy_no_user");
     return NextResponse.redirect(url);
   }
 

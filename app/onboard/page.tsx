@@ -1,14 +1,8 @@
-import Link from "next/link";
 import { redirect } from "next/navigation";
 import { OnboardForm } from "./onboard-form";
 import { createClient } from "@/lib/supabase/server";
 
-export default async function OnboardPage({
-  searchParams,
-}: {
-  searchParams: Promise<{ why?: string }>;
-}) {
-  const { why } = await searchParams;
+export default async function OnboardPage() {
   const supabase = await createClient();
   const {
     data: { user },
@@ -26,20 +20,7 @@ export default async function OnboardPage({
         <p className="mt-2 text-muted">Vereins-Tennis. Challenge. Rangliste. Spaß.</p>
       </div>
 
-      {why && (
-        <div className="mt-4 rounded-card border border-clay bg-clay/10 p-3 text-xs font-mono text-clay-dark">
-          debug: redirected here with why={why} · user={user ? user.id.slice(0, 8) : "null"}
-        </div>
-      )}
-
       <OnboardForm />
-
-      <p className="mt-8 text-center text-xs text-muted">
-        Trainer/-in?{" "}
-        <Link className="underline underline-offset-4" href="/coach/sign-in">
-          Hier zum Trainer-Login
-        </Link>
-      </p>
     </main>
   );
 }
