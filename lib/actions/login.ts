@@ -28,13 +28,12 @@ export async function loginWithCodeAction(formData: FormData): Promise<LoginResu
   const codeHash = await hashRecoveryCode(normalized);
 
   const admin = await createServiceClient();
-  const { data: profile, error: lookupErr } = await admin
+  const { data: profile } = await admin
     .from("profiles")
     .select("id, role")
     .eq("recovery_code_hash", codeHash)
     .maybeSingle();
 
-  if (lookupErr) return { ok: false, error: `Lookup fehlgeschlagen: ${lookupErr.message}` };
   if (!profile) return { ok: false, error: "Code ungültig." };
 
   const email = syntheticEmail(profile.id);
