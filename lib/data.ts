@@ -15,9 +15,9 @@ export async function requireMe(): Promise<Me> {
   const {
     data: { user },
   } = await supabase.auth.getUser();
-  if (!user) redirect("/onboard");
+  if (!user) redirect("/onboard?why=requireMe_no_user");
   const { data: profile } = await supabase.from("profiles").select("*").eq("id", user.id).maybeSingle();
-  if (!profile) redirect("/onboard");
+  if (!profile) redirect("/onboard?why=requireMe_no_profile");
   const { data: season } = await supabase
     .from("seasons")
     .select("*")
