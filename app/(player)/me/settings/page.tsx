@@ -2,6 +2,7 @@ import { Card, CardBody } from "@/components/ui/card";
 import { PageHeader } from "@/components/page-header";
 import { requirePlayer } from "@/lib/data";
 import { DangerZone } from "./danger-zone";
+import { EditProfileForm } from "./edit-profile-form";
 
 export default async function SettingsPage() {
   const me = await requirePlayer();
@@ -9,6 +10,8 @@ export default async function SettingsPage() {
     <main>
       <PageHeader title="Einstellungen" subtitle={me.profile.nickname} />
       <section className="px-5 space-y-3">
+        <EditProfileForm nickname={me.profile.nickname} initials={me.profile.initials ?? null} />
+
         <Card>
           <CardBody className="text-sm space-y-1">
             <div className="font-medium">Was wir speichern</div>
