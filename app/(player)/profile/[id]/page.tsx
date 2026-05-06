@@ -22,6 +22,13 @@ export default async function ProfilePage(props: { params: Promise<{ id: string 
 
   const isCoach = profile.role === "coach";
   const myPos = !isMe && me.profile.role === "player" ? await fetchMyLadderPosition(me.profile.id, me.activeSeason.id) : null;
+
+  const daysOnTop = position
+    ? position.days_on_top +
+      (position.top_since
+        ? Math.max(0, Math.floor((Date.now() - new Date(position.top_since).getTime()) / 86_400_000))
+        : 0)
+    : 0;
   const allowedToChallenge = !isMe && !isCoach && canChallenge(myPos, position);
 
   return (
@@ -49,6 +56,13 @@ export default async function ProfilePage(props: { params: Promise<{ id: string 
               <div className="mt-1 text-xs text-muted">
                 {position?.matches_played ?? 0} Matches · {position?.wins ?? 0}S {position?.losses ?? 0}N
               </div>
+              {(position?.row === 1 || daysOnTop > 0) && (
+                <div className="mt-0.5 text-xs text-lemon-600 font-medium">
+                  👑 {daysOnTop === 0
+                    ? "heute an der Spitze"
+                    : `${daysOnTop} ${daysOnTop === 1 ? "Tag" : "Tage"} an der Spitze`}
+                </div>
+              )}
               <div className="mt-2 h-1.5 bg-border rounded-pill overflow-hidden">
                 <div
                   className="h-full bg-gradient-to-r from-court-500 to-lemon-400"
