@@ -6,6 +6,7 @@ import { PageHeader } from "@/components/page-header";
 import { fetchMatchesNeedingMyAction, fetchRecentMatches, requirePlayer, type MatchWithProfiles } from "@/lib/data";
 import { progressToNextLevel } from "@/lib/achievements";
 import { formatRelative } from "@/lib/utils";
+import { NickEgg } from "./nick-egg";
 
 export default async function FeedPage() {
   const me = await requirePlayer();
@@ -95,6 +96,8 @@ export default async function FeedPage() {
           </div>
         )}
       </section>
+
+      <NickEgg />
     </main>
   );
 }
