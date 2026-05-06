@@ -33,9 +33,11 @@ export default async function MePage() {
               <div className="flex-1">
                 <div className="font-display text-xl">{me.profile.nickname}</div>
                 <div className="text-xs text-muted">Lvl {lvl.level} · {me.profile.total_xp} XP</div>
-                {daysOnTop > 0 && (
+                {(pos?.row === 1 || daysOnTop > 0) && (
                   <div className="text-xs text-lemon-600 font-medium mt-0.5">
-                    👑 {daysOnTop} {daysOnTop === 1 ? "Tag" : "Tage"} an der Spitze
+                    👑 {daysOnTop === 0
+                      ? "heute an der Spitze"
+                      : `${daysOnTop} ${daysOnTop === 1 ? "Tag" : "Tage"} an der Spitze`}
                   </div>
                 )}
               </div>

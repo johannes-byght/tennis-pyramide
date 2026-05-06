@@ -66,9 +66,11 @@ export default async function RankingPage() {
                           <span className="ml-1 text-clay">🔥{p.current_streak}</span>
                         )}
                       </div>
-                      {onTop && p.total_days_on_top > 0 && (
+                      {onTop && (
                         <div className="text-[10px] text-lemon-600 font-medium">
-                          {p.total_days_on_top}d an der Spitze
+                          {p.total_days_on_top === 0
+                            ? "heute oben"
+                            : `${p.total_days_on_top}d an der Spitze`}
                         </div>
                       )}
                     </Card>
