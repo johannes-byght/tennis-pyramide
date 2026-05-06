@@ -47,7 +47,7 @@ export default async function RankingPage() {
                       )}
                     >
                       <div className="relative">
-                        <Avatar seed={p.avatar_seed} size={44} ring={isMe} />
+                        <Avatar seed={p.avatar_seed} size={44} ring={isMe} initials={p.initials} />
                         {onTop && (
                           <span
                             aria-label="Spitzenposition"
@@ -83,8 +83,7 @@ export default async function RankingPage() {
               eigenen Reihe oder genau einer Reihe darüber herausfordern.
             </p>
             <p>
-              Gewinnst du gegen jemanden über dir, tauscht ihr die Plätze. Trainer:innen tauchen
-              hier nicht auf.
+              Gewinnst du gegen jemanden über dir, tauscht ihr die Plätze.
             </p>
           </CardBody>
         </Card>
