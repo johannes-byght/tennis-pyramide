@@ -46,6 +46,8 @@ export type LadderPosition = {
   current_streak: number;
   best_streak: number;
   last_match_at: string | null;
+  days_on_top: number;
+  top_since: string | null;
 };
 
 export type Challenge = {
@@ -97,6 +99,7 @@ export type LadderRow = {
   current_streak: number;
   best_streak: number;
   last_match_at: string | null;
+  total_days_on_top: number;
 };
 
 export type ProfileAchievement = {
