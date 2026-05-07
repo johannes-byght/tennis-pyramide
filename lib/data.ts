@@ -104,9 +104,10 @@ export async function fetchRecentMatches(clubId: string, limit = 30): Promise<Ma
 
 export type ChallengeWithProfiles = {
   id: string;
-  status: string;
+  status: "pending" | "accepted" | "countered" | "expired";
   message: string | null;
   proposed_at: string | null;
+  counter_proposed_at: string | null;
   created_at: string;
   challenger: Pick<Profile, "id" | "nickname" | "avatar_seed">;
   opponent: Pick<Profile, "id" | "nickname" | "avatar_seed">;
@@ -117,12 +118,12 @@ export async function fetchMyChallenges(profileId: string): Promise<ChallengeWit
   const { data, error } = await supabase
     .from("challenges")
     .select(
-      `id, status, message, proposed_at, created_at,
+      `id, status, message, proposed_at, counter_proposed_at, created_at,
        challenger:profiles!challenges_challenger_id_fkey(id, nickname, avatar_seed),
        opponent:profiles!challenges_opponent_id_fkey(id, nickname, avatar_seed)`,
     )
     .or(`challenger_id.eq.${profileId},opponent_id.eq.${profileId}`)
-    .in("status", ["pending", "accepted"])
+    .in("status", ["pending", "accepted", "countered", "expired"])
     .order("created_at", { ascending: false });
   if (error) throw error;
   return (data ?? []) as unknown as ChallengeWithProfiles[];

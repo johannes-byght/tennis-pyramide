@@ -90,6 +90,18 @@ export async function respondChallenge(id: string, action: "accept" | "decline" 
   return { ok: true as const };
 }
 
+export async function counterChallenge(id: string, proposedAt: string) {
+  if (!proposedAt) return { ok: false as const, error: "Bitte ein Datum auswählen." };
+  const supabase = await createClient();
+  const { error } = await supabase
+    .from("challenges")
+    .update({ status: "countered", counter_proposed_at: proposedAt, responded_at: new Date().toISOString() })
+    .eq("id", id);
+  if (error) return { ok: false as const, error: error.message };
+  revalidatePath("/challenges");
+  return { ok: true as const };
+}
+
 export async function recordMatch(input: {
   challengeId?: string;
   opponentId: string;
@@ -104,21 +116,7 @@ export async function recordMatch(input: {
   if ("error" in ctx) return { ok: false as const, error: ctx.error };
   const { supabase, user, profile, seasonId } = ctx;
 
-  // Bei einer bestehenden Challenge dürfen beide Seiten eintragen — der Reihen-Check
-  // wurde bereits beim Erstellen geprüft. Bei Walk-In-Matches (kein challengeId) gilt
-  // er weiter, damit niemand quer durch die Pyramide klopfen kann.
-  if (!parsed.data.challengeId) {
-    const [mySlot, oppSlot] = await Promise.all([
-      loadSlot(supabase, user.id, seasonId),
-      loadSlot(supabase, parsed.data.opponentId, seasonId),
-    ]);
-    if (!canChallenge(mySlot, oppSlot)) {
-      return {
-        ok: false as const,
-        error: "Match nicht erlaubt: nur gleiche Reihe oder eine Reihe darüber.",
-      };
-    }
-  } else {
+  if (parsed.data.challengeId) {
     // Sicherstellen, dass die Challenge wirklich diese beiden Spieler verbindet.
     const { data: ch } = await supabase
       .from("challenges")
@@ -131,6 +129,20 @@ export async function recordMatch(input: {
       (challenge.challenger_id === user.id && challenge.opponent_id === parsed.data.opponentId) ||
       (challenge.opponent_id === user.id && challenge.challenger_id === parsed.data.opponentId);
     if (!involved) return { ok: false as const, error: "Nicht an dieser Challenge beteiligt" };
+  }
+
+  // Positionen immer prüfen — auch bei Challenge-Matches. Haben sich die Positionen
+  // inzwischen verschoben (z.B. durch einen Aufstieg), ist das Match nicht mehr gültig.
+  const [mySlot, oppSlot] = await Promise.all([
+    loadSlot(supabase, user.id, seasonId),
+    loadSlot(supabase, parsed.data.opponentId, seasonId),
+  ]);
+  if (!canChallenge(mySlot, oppSlot)) {
+    return {
+      ok: false as const,
+      error:
+        "Match nicht mehr erlaubt: Die Positionen haben sich seit der Challenge zu weit verschoben. Bitte Challenge abbrechen.",
+    };
   }
 
   const sets = parsed.data.sets;
