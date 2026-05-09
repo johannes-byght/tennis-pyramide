@@ -17,13 +17,23 @@ export function nextBottomSlot(filled: Slot[]): Slot {
 
 /**
  * Darf `challenger` `opponent` herausfordern?
- * Erlaubt: gleicher Reihe ODER eine Reihe darüber (= row-1 des Gegners).
+ * Erlaubt: gleiche Reihe ODER eine Reihe darüber (= row-1 des Gegners).
  * Coaches haben gar keinen Slot → sind hier nicht spielberechtigt.
  */
 export function canChallenge(challenger: Slot | null, opponent: Slot | null): boolean {
   if (!challenger || !opponent) return false;
   if (challenger.row === opponent.row && challenger.col === opponent.col) return false;
   return challenger.row === opponent.row || challenger.row === opponent.row + 1;
+}
+
+/**
+ * Sind zwei Spieler ein gültiges Match-Paar?
+ * Richtungsunabhängig: einer hätte den anderen herausfordern dürfen.
+ * Wird beim Eintragen verwendet, weil der Eintragender nicht immer der
+ * ursprüngliche Challenger ist.
+ */
+export function isValidMatchup(a: Slot | null, b: Slot | null): boolean {
+  return canChallenge(a, b) || canChallenge(b, a);
 }
 
 /** Tauscht die Slots im Falle eines Aufstiegs. Annahme: winner war in row+1 des Verlierers. */

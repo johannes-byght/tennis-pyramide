@@ -2,7 +2,7 @@
 
 import { revalidatePath } from "next/cache";
 import { createClient } from "@/lib/supabase/server";
-import { canChallenge } from "@/lib/ladder";
+import { canChallenge, isValidMatchup } from "@/lib/ladder";
 import { challengeSchema, matchEntrySchema } from "@/lib/validation/forms";
 import { determineWinner } from "@/lib/scoring";
 import type { LadderPosition, Profile } from "@/lib/supabase/types";
@@ -137,7 +137,7 @@ export async function recordMatch(input: {
     loadSlot(supabase, user.id, seasonId),
     loadSlot(supabase, parsed.data.opponentId, seasonId),
   ]);
-  if (!canChallenge(mySlot, oppSlot)) {
+  if (!isValidMatchup(mySlot, oppSlot)) {
     return {
       ok: false as const,
       error:
