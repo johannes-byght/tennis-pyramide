@@ -11,15 +11,20 @@ import type { LadderRow } from "@/lib/supabase/types";
 import { cn } from "@/lib/utils";
 
 type Mode = "challenge" | "result";
-type Format = "best_of_3" | "pro_set" | "tiebreak_only";
+type Format = "best_of_3" | "pro_set";
 
 type Member = Pick<LadderRow, "profile_id" | "nickname" | "avatar_seed" | "level" | "row" | "col">;
 
 const FORMAT_LABEL: Record<Format, string> = {
-  best_of_3: "Best of 3",
-  pro_set: "Ein Satz",
-  tiebreak_only: "Match-Tiebreak",
+  best_of_3: "2 Sätze + CT",
+  pro_set: "1 Satz",
 };
+
+function initialSets(format: Format): { p1: string; p2: string }[] {
+  return format === "best_of_3"
+    ? [{ p1: "", p2: "" }, { p1: "", p2: "" }]
+    : [{ p1: "", p2: "" }];
+}
 
 export function NewChallengeForm({
   members,
@@ -46,7 +51,7 @@ export function NewChallengeForm({
   // Result mode state
   const [iWon, setIWon] = useState(true);
   const [format, setFormat] = useState<Format>("best_of_3");
-  const [sets, setSets] = useState<{ p1: string; p2: string }[]>([{ p1: "", p2: "" }]);
+  const [sets, setSets] = useState<{ p1: string; p2: string }[]>(initialSets("best_of_3"));
   const [error, setError] = useState<string | null>(null);
   const [pending, start] = useTransition();
 
@@ -57,17 +62,25 @@ export function NewChallengeForm({
 
   const opponent = members.find((m) => m.profile_id === opponentId) ?? null;
 
-  function addSet() {
+  function changeFormat(f: Format) {
+    setFormat(f);
+    setSets(initialSets(f));
+  }
+
+  function updateSet(i: number, key: "p1" | "p2", value: string) {
+    setSets(sets.map((s, idx) => (idx === i ? { ...s, [key]: value.replace(/[^0-9]/g, "").slice(0, 2) } : s)));
+  }
+
+  function addCT() {
     if (sets.length >= 3) return;
     setSets([...sets, { p1: "", p2: "" }]);
   }
-  function updateSet(i: number, key: "p1" | "p2", value: string) {
-    setSets(sets.map((s, idx) => (idx === i ? { ...s, [key]: value.replace(/[^0-9]/g, "").slice(0, 1) } : s)));
+
+  function removeCT() {
+    setSets(sets.slice(0, 2));
   }
-  function removeSet(i: number) {
-    if (sets.length <= 1) return;
-    setSets(sets.filter((_, idx) => idx !== i));
-  }
+
+  const isCT = (i: number) => format === "best_of_3" && i === 2;
 
   return (
     <div className="space-y-3">
@@ -181,12 +194,12 @@ export function NewChallengeForm({
 
             <div>
               <div className="text-sm font-medium mb-1.5">Format</div>
-              <div className="grid grid-cols-3 gap-2 text-sm">
+              <div className="grid grid-cols-2 gap-2 text-sm">
                 {(Object.keys(FORMAT_LABEL) as Format[]).map((f) => (
                   <button
                     key={f}
                     type="button"
-                    onClick={() => setFormat(f)}
+                    onClick={() => changeFormat(f)}
                     className={cn(
                       "rounded-pill px-3 py-2 border transition",
                       format === f
@@ -201,14 +214,16 @@ export function NewChallengeForm({
             </div>
 
             <div>
-              <div className="text-sm font-medium mb-1.5">Sätze</div>
+              <div className="text-sm font-medium mb-1.5">Ergebnis</div>
               <div className="space-y-2">
                 {sets.map((s, i) => (
                   <div key={i} className="flex items-center gap-2">
-                    <span className="w-12 text-xs text-muted">Satz {i + 1}</span>
+                    <span className={cn("w-12 text-xs font-medium", isCT(i) ? "text-lemon-600" : "text-muted")}>
+                      {isCT(i) ? "CT" : `Satz ${i + 1}`}
+                    </span>
                     <Input
                       inputMode="numeric"
-                      placeholder="6"
+                      placeholder={isCT(i) ? "10" : "6"}
                       value={s.p1}
                       onChange={(e) => updateSet(i, "p1", e.target.value)}
                       className="text-center max-w-16"
@@ -216,26 +231,27 @@ export function NewChallengeForm({
                     <span className="text-muted">:</span>
                     <Input
                       inputMode="numeric"
-                      placeholder="4"
+                      placeholder={isCT(i) ? "7" : "4"}
                       value={s.p2}
                       onChange={(e) => updateSet(i, "p2", e.target.value)}
                       className="text-center max-w-16"
                     />
-                    {sets.length > 1 && (
-                      <Button variant="ghost" size="sm" type="button" onClick={() => removeSet(i)}>
+                    {isCT(i) && (
+                      <Button variant="ghost" size="sm" type="button" onClick={removeCT}>
                         ✕
                       </Button>
                     )}
                   </div>
                 ))}
-                {sets.length < 3 && (
-                  <Button variant="ghost" size="sm" type="button" onClick={addSet}>
-                    + Satz
+                {format === "best_of_3" && sets.length === 2 && (
+                  <Button variant="ghost" size="sm" type="button" onClick={addCT}>
+                    + CT hinzufügen
                   </Button>
                 )}
               </div>
               <p className="mt-2 text-xs text-muted">
-                Trag dein Ergebnis links ein, das des Gegners rechts.
+                Dein Ergebnis links, Gegner rechts.
+                {format === "best_of_3" && " CT bei 1:1 Sätzen."}
               </p>
             </div>
           </CardBody>

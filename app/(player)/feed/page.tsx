@@ -3,58 +3,63 @@ import { Avatar } from "@/components/ui/avatar";
 import { Badge } from "@/components/ui/badge";
 import { Card, CardBody } from "@/components/ui/card";
 import { PageHeader } from "@/components/page-header";
-import { fetchMatchesNeedingMyAction, fetchRecentMatches, requirePlayer, type MatchWithProfiles } from "@/lib/data";
+import { fetchMatchesNeedingMyAction, fetchRecentMatches, requireMe, type MatchWithProfiles } from "@/lib/data";
 import { progressToNextLevel } from "@/lib/achievements";
 import { formatRelative } from "@/lib/utils";
 import { NickEgg } from "./nick-egg";
 
 export default async function FeedPage() {
-  const me = await requirePlayer();
+  const me = await requireMe();
+  const isPlayer = me.profile.role === "player";
   const [recent, pendingMine] = await Promise.all([
     fetchRecentMatches(me.profile.club_id, 25),
-    fetchMatchesNeedingMyAction(me.profile.id),
+    isPlayer ? fetchMatchesNeedingMyAction(me.profile.id) : Promise.resolve([]),
   ]);
-  const lvl = progressToNextLevel(me.profile.total_xp);
+  const lvl = isPlayer ? progressToNextLevel(me.profile.total_xp) : null;
 
   return (
     <main>
       <PageHeader
         title={`Hi ${me.profile.nickname}!`}
-        subtitle="Heute ein Match?"
+        subtitle={isPlayer ? "Heute ein Match?" : "Vereins-Feed"}
         right={
-          <Link
-            href="/challenges/new"
-            className="rounded-pill bg-court-600 text-white px-4 py-2 text-sm font-medium shadow-cozy hover:bg-court-700"
-          >
-            + Challenge
-          </Link>
+          isPlayer ? (
+            <Link
+              href="/challenges/new"
+              className="rounded-pill bg-court-600 text-white px-4 py-2 text-sm font-medium shadow-cozy hover:bg-court-700"
+            >
+              + Challenge
+            </Link>
+          ) : undefined
         }
       />
 
-      <section className="px-5">
-        <Card>
-          <CardBody className="flex items-center gap-4">
-            <Avatar seed={me.profile.avatar_seed} size={56} ring />
-            <div className="flex-1 min-w-0">
-              <div className="flex items-baseline gap-2">
-                <span className="font-display text-xl">Lvl {lvl.level}</span>
-                <span className="text-xs text-muted">{me.profile.total_xp} XP</span>
+      {isPlayer && lvl && (
+        <section className="px-5">
+          <Card>
+            <CardBody className="flex items-center gap-4">
+              <Avatar seed={me.profile.avatar_seed} size={56} ring />
+              <div className="flex-1 min-w-0">
+                <div className="flex items-baseline gap-2">
+                  <span className="font-display text-xl">Lvl {lvl.level}</span>
+                  <span className="text-xs text-muted">{me.profile.total_xp} XP</span>
+                </div>
+                <div className="mt-2 h-2 w-full bg-border rounded-pill overflow-hidden">
+                  <div
+                    className="h-full bg-gradient-to-r from-court-500 to-lemon-400 transition-all"
+                    style={{ width: `${Math.round(lvl.pct * 100)}%` }}
+                  />
+                </div>
+                <div className="mt-1 text-[11px] text-muted">
+                  Noch {lvl.need - lvl.have} XP bis Level {lvl.level + 1}
+                </div>
               </div>
-              <div className="mt-2 h-2 w-full bg-border rounded-pill overflow-hidden">
-                <div
-                  className="h-full bg-gradient-to-r from-court-500 to-lemon-400 transition-all"
-                  style={{ width: `${Math.round(lvl.pct * 100)}%` }}
-                />
-              </div>
-              <div className="mt-1 text-[11px] text-muted">
-                Noch {lvl.need - lvl.have} XP bis Level {lvl.level + 1}
-              </div>
-            </div>
-          </CardBody>
-        </Card>
-      </section>
+            </CardBody>
+          </Card>
+        </section>
+      )}
 
-      {pendingMine.length > 0 && (
+      {isPlayer && pendingMine.length > 0 && (
         <section className="px-5 mt-5">
           <h2 className="font-display text-lg mb-2">Bestätigung nötig</h2>
           <div className="space-y-2">
@@ -97,7 +102,7 @@ export default async function FeedPage() {
         )}
       </section>
 
-      <NickEgg />
+      {isPlayer && <NickEgg />}
     </main>
   );
 }

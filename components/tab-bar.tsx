@@ -13,6 +13,7 @@ const PLAYER_TABS = [
 ];
 
 const COACH_TABS = [
+  { href: "/feed", label: "Feed", Icon: Home },
   { href: "/ranking", label: "Pyramide", Icon: Trophy },
   { href: "/coach", label: "Verwaltung", Icon: ShieldCheck },
 ];

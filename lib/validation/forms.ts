@@ -32,8 +32,8 @@ export const challengeSchema = z.object({
 export type ChallengeInput = z.infer<typeof challengeSchema>;
 
 const setSchema = z.object({
-  p1: z.number().int().min(0).max(7),
-  p2: z.number().int().min(0).max(7),
+  p1: z.number().int().min(0).max(99),
+  p2: z.number().int().min(0).max(99),
 });
 
 export const matchEntrySchema = z.object({
