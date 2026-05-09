@@ -30,8 +30,8 @@ export function NickEgg() {
       {visible && (
         <div className="mt-3 animate-fade-in rounded-2xl bg-court-800 text-white px-5 py-3 text-sm text-center shadow-lg max-w-[220px]">
           <div className="text-lg mb-1">💡</div>
-          <div className="font-medium">Diese App war Nicks Idee.</div>
-          <div className="text-xs text-court-300 mt-1">Danke, Nick! 🙌</div>
+          <div className="font-medium">Diese App war Niks Idee.</div>
+          <div className="text-xs text-court-300 mt-1">Danke, Nik! 🙌</div>
         </div>
       )}
     </div>
