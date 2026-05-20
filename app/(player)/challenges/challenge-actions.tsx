@@ -74,7 +74,7 @@ export function ChallengeActions({ id, status, isIncoming, opponentId, opponentN
             Achtung: Wenn du ablehnst, tauscht du deinen Platz mit {opponentName}.
           </p>
           <div className="flex gap-1">
-            <Button size="sm" variant="destructive" disabled={pending} onClick={() => respond("decline")}>
+            <Button size="sm" variant="danger" disabled={pending} onClick={() => respond("decline")}>
               Ja, ablehnen
             </Button>
             <Button size="sm" variant="ghost" disabled={pending} onClick={() => setShowDeclineWarning(false)}>
