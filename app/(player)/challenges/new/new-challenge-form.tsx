@@ -10,6 +10,11 @@ import { createChallenge, recordMatch } from "@/lib/actions/challenges";
 import type { LadderRow } from "@/lib/supabase/types";
 import { cn } from "@/lib/utils";
 
+function localDt(d: Date): string {
+  const p = (n: number) => n.toString().padStart(2, "0");
+  return `${d.getFullYear()}-${p(d.getMonth() + 1)}-${p(d.getDate())}T${p(d.getHours())}:${p(d.getMinutes())}`;
+}
+
 type Mode = "challenge" | "result";
 type Format = "best_of_3" | "pro_set";
 
@@ -164,7 +169,13 @@ export function NewChallengeForm({
         <Card>
           <CardBody className="space-y-4">
             <Field label="Wann passt's?">
-              <Input type="datetime-local" value={proposedAt} onChange={(e) => setProposedAt(e.target.value)} />
+              <Input
+                type="datetime-local"
+                value={proposedAt}
+                min={localDt(new Date())}
+                max={localDt(new Date(Date.now() + 14 * 24 * 60 * 60 * 1000))}
+                onChange={(e) => setProposedAt(e.target.value)}
+              />
             </Field>
             <Field label="Nachricht (optional)">
               <Textarea

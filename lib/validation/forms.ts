@@ -23,13 +23,47 @@ export const onboardSchema = z.object({
 
 export type OnboardInput = z.infer<typeof onboardSchema>;
 
+function proposedAtRules(val: string | undefined) {
+  if (!val) return true;
+  const d = new Date(val);
+  return !isNaN(d.getTime());
+}
+
+const proposedAtField = z
+  .string()
+  .optional()
+  .refine(proposedAtRules, "Ungültiges Datum")
+  .refine(
+    (val) => !val || new Date(val) >= new Date(Date.now() - 60 * 60 * 1000),
+    "Datum darf nicht in der Vergangenheit liegen",
+  )
+  .refine(
+    (val) => !val || new Date(val) <= new Date(Date.now() + 15 * 24 * 60 * 60 * 1000),
+    "Datum darf maximal 14 Tage in der Zukunft liegen",
+  );
+
 export const challengeSchema = z.object({
   opponentId: z.string().uuid(),
-  proposedAt: z.string().optional(),
+  proposedAt: proposedAtField,
   message: z.string().max(280).optional(),
 });
 
 export type ChallengeInput = z.infer<typeof challengeSchema>;
+
+export const counterSchema = z.object({
+  proposedAt: z
+    .string()
+    .min(1, "Bitte ein Datum auswählen")
+    .refine((val) => !isNaN(new Date(val).getTime()), "Ungültiges Datum")
+    .refine(
+      (val) => new Date(val) >= new Date(Date.now() - 60 * 60 * 1000),
+      "Datum darf nicht in der Vergangenheit liegen",
+    )
+    .refine(
+      (val) => new Date(val) <= new Date(Date.now() + 15 * 24 * 60 * 60 * 1000),
+      "Datum darf maximal 14 Tage in der Zukunft liegen",
+    ),
+});
 
 const setSchema = z.object({
   p1: z.number().int().min(0).max(99),

@@ -3,7 +3,7 @@
 import { revalidatePath } from "next/cache";
 import { createClient } from "@/lib/supabase/server";
 import { canChallenge, isValidMatchup } from "@/lib/ladder";
-import { challengeSchema, matchEntrySchema } from "@/lib/validation/forms";
+import { challengeSchema, counterSchema, matchEntrySchema } from "@/lib/validation/forms";
 import { determineWinner } from "@/lib/scoring";
 import type { LadderPosition, Profile } from "@/lib/supabase/types";
 
@@ -80,7 +80,16 @@ export async function createChallenge(input: { opponentId: string; proposedAt?: 
 
 export async function respondChallenge(id: string, action: "accept" | "decline" | "cancel") {
   const supabase = await createClient();
-  const status = action === "accept" ? "accepted" : action === "decline" ? "declined" : "cancelled";
+
+  if (action === "decline") {
+    const { error } = await supabase.rpc("decline_challenge", { p_challenge_id: id });
+    if (error) return { ok: false as const, error: error.message };
+    revalidatePath("/challenges");
+    revalidatePath("/ranking");
+    return { ok: true as const };
+  }
+
+  const status = action === "accept" ? "accepted" : "cancelled";
   const { error } = await supabase
     .from("challenges")
     .update({ status, responded_at: new Date().toISOString() })
@@ -91,7 +100,8 @@ export async function respondChallenge(id: string, action: "accept" | "decline" 
 }
 
 export async function counterChallenge(id: string, proposedAt: string) {
-  if (!proposedAt) return { ok: false as const, error: "Bitte ein Datum auswählen." };
+  const parsed = counterSchema.safeParse({ proposedAt });
+  if (!parsed.success) return { ok: false as const, error: parsed.error.issues[0]?.message ?? "Ungültig" };
   const supabase = await createClient();
   const { error } = await supabase
     .from("challenges")
