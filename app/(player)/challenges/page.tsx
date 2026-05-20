@@ -148,6 +148,7 @@ export default async function ChallengesPage() {
                       status={status}
                       isIncoming={isIncoming}
                       opponentId={counterpart.id}
+                      opponentName={counterpart.nickname}
                     />
                   </CardBody>
                 </Card>
