@@ -33,6 +33,7 @@ export default async function RankingPage() {
               {row.map((p) => {
                 const isMe = p.profile_id === me.profile.id;
                 const onTop = p.row === 1;
+                const rank = p.row * (p.row - 1) / 2 + p.col;
                 return (
                   <Link
                     key={p.profile_id}
@@ -48,12 +49,16 @@ export default async function RankingPage() {
                     >
                       <div className="relative">
                         <Avatar seed={p.avatar_seed} size={44} ring={isMe} initials={p.initials} />
-                        {onTop && (
+                        {onTop ? (
                           <span
                             aria-label="Spitzenposition"
                             className="absolute -top-2 -right-2 text-base"
                           >
                             👑
+                          </span>
+                        ) : (
+                          <span className="absolute -top-1.5 -right-1.5 text-[10px] font-bold text-muted bg-card border border-border rounded-full w-4 h-4 flex items-center justify-center leading-none">
+                            {rank}
                           </span>
                         )}
                       </div>
