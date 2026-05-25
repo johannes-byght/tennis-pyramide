@@ -21,7 +21,7 @@ function formatDate(iso: string): string {
 export default async function ChallengesPage() {
   const me = await requirePlayer();
   const [challenges, matches] = await Promise.all([
-    fetchMyChallenges(me.profile.id),
+    fetchMyChallenges(me.profile.id, me.activeSeason?.id),
     fetchMatchesNeedingMyAction(me.profile.id),
   ]);
 

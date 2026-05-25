@@ -6,7 +6,7 @@ import { Card, CardBody } from "@/components/ui/card";
 import { PageHeader } from "@/components/page-header";
 import { TabBar } from "@/components/tab-bar";
 import { createClient } from "@/lib/supabase/server";
-import { fetchClub, fetchClubMembers, requireMe } from "@/lib/data";
+import { fetchClub, fetchClubMembers, fetchPyramids, requireMe } from "@/lib/data";
 import { AdminToggle } from "./admin-toggle";
 import { GenerateCodes } from "./generate-codes";
 import { DisputeActions } from "./dispute-actions";
@@ -18,10 +18,10 @@ export default async function CoachPage() {
   if (!isAdmin) redirect("/feed");
 
   const supabase = await createClient();
-  const [{ data: codes }, members, { data: disputes }, club] = await Promise.all([
+  const [{ data: codes }, members, { data: disputes }, club, pyramids] = await Promise.all([
     supabase
       .from("invite_codes")
-      .select("*")
+      .select("*, pyramid:seasons(name)")
       .eq("club_id", me.profile.club_id)
       .order("created_at", { ascending: false })
       .limit(20),
@@ -34,12 +34,23 @@ export default async function CoachPage() {
       .eq("club_id", me.profile.club_id)
       .eq("status", "disputed"),
     fetchClub(me.profile.club_id),
+    fetchPyramids(me.profile.club_id),
   ]);
-  type CodeRow = { code: string; role: string; max_uses: number; used_count: number };
+
+  type CodeRow = {
+    code: string;
+    role: string;
+    max_uses: number;
+    used_count: number;
+    season_id: string | null;
+    pyramid: { name: string } | null;
+  };
   const codeRows = (codes as CodeRow[] | null) ?? [];
 
   const players = members.filter((m) => m.role === "player");
   const coaches = members.filter((m) => m.role === "coach");
+
+  const pyramidById = Object.fromEntries(pyramids.map((p) => [p.id, p]));
 
   return (
     <main className="mx-auto max-w-md px-0 pb-28">
@@ -49,29 +60,40 @@ export default async function CoachPage() {
         <Card>
           <CardBody className="grid grid-cols-3 gap-3 text-center">
             <Stat label="Spieler:innen" value={players.length} />
-            <Stat label="Aktive Saison" value={me.activeSeason ? "✓" : "—"} />
+            <Stat label="Pyramiden" value={pyramids.length} />
             <Stat label="Disputes" value={(disputes ?? []).length} />
           </CardBody>
         </Card>
 
         <Card>
           <CardBody className="space-y-3">
-            <div className="flex items-center justify-between">
-              <h2 className="font-display text-lg">Saison</h2>
-              {me.activeSeason ? (
-                <Badge variant="court">{me.activeSeason.name}</Badge>
-              ) : (
-                <Badge variant="muted">keine</Badge>
-              )}
+            <h2 className="font-display text-lg">Pyramiden</h2>
+            {pyramids.length === 0 ? (
+              <p className="text-sm text-muted">Noch keine Pyramide. Lege jetzt eine an.</p>
+            ) : (
+              <ul className="space-y-1">
+                {pyramids.map((p) => (
+                  <li
+                    key={p.id}
+                    className="flex items-center justify-between gap-2 rounded-pill bg-sand-50 dark:bg-court-800/30 px-3 py-2"
+                  >
+                    <span className="font-medium text-sm">{p.name}</span>
+                    <Badge variant="court">{p.player_count} Spieler:innen</Badge>
+                  </li>
+                ))}
+              </ul>
+            )}
+            <div className="pt-1">
+              <p className="text-xs text-muted mb-2">Neue Pyramide anlegen</p>
+              <NewSeasonForm />
             </div>
-            <NewSeasonForm activeName={me.activeSeason?.name ?? null} />
           </CardBody>
         </Card>
 
         <Card>
           <CardBody className="space-y-3">
             <h2 className="font-display text-lg">Einladungscodes</h2>
-            <GenerateCodes />
+            <GenerateCodes pyramids={pyramids} />
             <ul className="space-y-1 text-sm">
               {codeRows.map((c) => (
                 <li
@@ -80,7 +102,7 @@ export default async function CoachPage() {
                 >
                   <span className="font-mono">{c.code}</span>
                   <span className="text-xs text-muted">
-                    {c.role} · {c.used_count}/{c.max_uses}
+                    {c.pyramid?.name ?? c.role} · {c.used_count}/{c.max_uses}
                   </span>
                 </li>
               ))}
@@ -148,16 +170,20 @@ export default async function CoachPage() {
               starten und Disputes lösen.
             </p>
             <ul className="divide-y divide-border">
-              {players.map((m) => (
-                <li key={m.id} className="py-2 flex items-center gap-2">
-                  <Avatar seed={m.avatar_seed} size={32} />
-                  <Link href={`/profile/${m.id}`} className="flex-1 text-sm font-medium hover:underline">
-                    {m.nickname}
-                  </Link>
-                  {m.is_admin && <Badge variant="lemon">Admin</Badge>}
-                  <AdminToggle profileId={m.id} isAdmin={m.is_admin} disabled={m.id === me.profile.id} />
-                </li>
-              ))}
+              {players.map((m) => {
+                const pyramid = m.season_id ? pyramidById[m.season_id] : null;
+                return (
+                  <li key={m.id} className="py-2 flex items-center gap-2">
+                    <Avatar seed={m.avatar_seed} size={32} />
+                    <Link href={`/profile/${m.id}`} className="flex-1 text-sm font-medium hover:underline">
+                      {m.nickname}
+                    </Link>
+                    {pyramid && <Badge variant="muted">{pyramid.name}</Badge>}
+                    {m.is_admin && <Badge variant="lemon">Admin</Badge>}
+                    <AdminToggle profileId={m.id} isAdmin={m.is_admin} disabled={m.id === me.profile.id} />
+                  </li>
+                );
+              })}
             </ul>
           </CardBody>
         </Card>

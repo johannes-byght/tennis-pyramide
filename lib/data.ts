@@ -18,16 +18,16 @@ export async function requireMe(): Promise<Me> {
   if (!user) redirect("/onboard");
   const { data: profile } = await supabase.from("profiles").select("*").eq("id", user.id).maybeSingle();
   if (!profile) redirect("/onboard");
-  const { data: season } = await supabase
-    .from("seasons")
-    .select("*")
-    .eq("club_id", (profile as Profile).club_id)
-    .eq("is_active", true)
-    .maybeSingle();
+  const p = profile as Profile;
+  let season: Season | null = null;
+  if (p.season_id) {
+    const { data: s } = await supabase.from("seasons").select("*").eq("id", p.season_id).maybeSingle();
+    season = (s as Season | null) ?? null;
+  }
   return {
     user: { id: user.id },
-    profile: profile as Profile,
-    activeSeason: (season as Season | null) ?? null,
+    profile: p,
+    activeSeason: season,
   };
 }
 
@@ -113,9 +113,9 @@ export type ChallengeWithProfiles = {
   opponent: Pick<Profile, "id" | "nickname" | "avatar_seed">;
 };
 
-export async function fetchMyChallenges(profileId: string): Promise<ChallengeWithProfiles[]> {
+export async function fetchMyChallenges(profileId: string, seasonId?: string): Promise<ChallengeWithProfiles[]> {
   const supabase = await createClient();
-  const { data, error } = await supabase
+  let query = supabase
     .from("challenges")
     .select(
       `id, status, message, proposed_at, counter_proposed_at, created_at,
@@ -123,10 +123,33 @@ export async function fetchMyChallenges(profileId: string): Promise<ChallengeWit
        opponent:profiles!challenges_opponent_id_fkey(id, nickname, avatar_seed)`,
     )
     .or(`challenger_id.eq.${profileId},opponent_id.eq.${profileId}`)
-    .in("status", ["pending", "accepted", "countered", "expired"])
-    .order("created_at", { ascending: false });
+    .in("status", ["pending", "accepted", "countered", "expired"]);
+  if (seasonId) query = query.eq("season_id", seasonId);
+  const { data, error } = await query.order("created_at", { ascending: false });
   if (error) throw error;
   return (data ?? []) as unknown as ChallengeWithProfiles[];
+}
+
+export type PyramidSummary = Season & { player_count: number };
+
+export async function fetchPyramids(clubId: string): Promise<PyramidSummary[]> {
+  const supabase = await createClient();
+  const { data: seasons } = await supabase
+    .from("seasons")
+    .select("*")
+    .eq("club_id", clubId)
+    .eq("is_active", true)
+    .order("started_at", { ascending: true });
+  if (!seasons || seasons.length === 0) return [];
+  const { data: counts } = await supabase
+    .from("profiles")
+    .select("season_id")
+    .in("season_id", (seasons as Season[]).map((s) => s.id));
+  const countMap: Record<string, number> = {};
+  for (const row of (counts ?? []) as { season_id: string }[]) {
+    countMap[row.season_id] = (countMap[row.season_id] ?? 0) + 1;
+  }
+  return (seasons as Season[]).map((s) => ({ ...s, player_count: countMap[s.id] ?? 0 }));
 }
 
 export async function fetchMatchesNeedingMyAction(profileId: string): Promise<MatchWithProfiles[]> {

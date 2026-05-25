@@ -15,20 +15,14 @@ async function loadActiveContext() {
   if (!user) return { error: "Nicht angemeldet" as const };
   const { data: me } = await supabase
     .from("profiles")
-    .select("id, club_id, role")
+    .select("id, club_id, role, season_id")
     .eq("id", user.id)
     .maybeSingle();
   if (!me) return { error: "Profil nicht gefunden" as const };
-  const profile = me as Pick<Profile, "id" | "club_id" | "role">;
+  const profile = me as Pick<Profile, "id" | "club_id" | "role" | "season_id">;
   if (profile.role !== "player") return { error: "Trainer können nicht spielen" as const };
-  const { data: season } = await supabase
-    .from("seasons")
-    .select("id")
-    .eq("club_id", profile.club_id)
-    .eq("is_active", true)
-    .maybeSingle();
-  if (!season) return { error: "Keine aktive Saison" as const };
-  return { supabase, user, profile, seasonId: (season as { id: string }).id };
+  if (!profile.season_id) return { error: "Keine aktive Pyramide" as const };
+  return { supabase, user, profile, seasonId: profile.season_id };
 }
 
 async function loadSlot(
@@ -67,6 +61,7 @@ export async function createChallenge(input: { opponentId: string; proposedAt?: 
 
   const { error } = await supabase.from("challenges").insert({
     club_id: profile.club_id,
+    season_id: seasonId,
     challenger_id: user.id,
     opponent_id: parsed.data.opponentId,
     proposed_at: parsed.data.proposedAt || null,

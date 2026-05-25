@@ -4,9 +4,9 @@ import { useRouter } from "next/navigation";
 import { useState, useTransition } from "react";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
-import { startNewSeason } from "@/lib/actions/coach";
+import { createPyramid } from "@/lib/actions/coach";
 
-export function NewSeasonForm({ activeName }: { activeName: string | null }) {
+export function NewSeasonForm() {
   const router = useRouter();
   const [name, setName] = useState("");
   const [pending, start] = useTransition();
@@ -19,7 +19,7 @@ export function NewSeasonForm({ activeName }: { activeName: string | null }) {
         e.preventDefault();
         start(async () => {
           setError(null);
-          const r = await startNewSeason(name.trim() || `Saison ${new Date().getFullYear()}`);
+          const r = await createPyramid(name.trim() || `Pyramide ${new Date().getFullYear()}`);
           if (!r.ok) return setError(r.error ?? "Fehler");
           setName("");
           router.refresh();
@@ -27,12 +27,12 @@ export function NewSeasonForm({ activeName }: { activeName: string | null }) {
       }}
     >
       <Input
-        placeholder={activeName ? "Neue Saison starten…" : "Erste Saison starten"}
+        placeholder="Name der Pyramide, z.B. Jungen"
         value={name}
         onChange={(e) => setName(e.target.value)}
       />
       <Button type="submit" disabled={pending}>
-        {pending ? "…" : "Start"}
+        {pending ? "…" : "Anlegen"}
       </Button>
       {error && <span className="text-xs text-clay-dark">{error}</span>}
     </form>

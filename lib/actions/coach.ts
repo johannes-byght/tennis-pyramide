@@ -29,7 +29,12 @@ async function requireAdmin() {
   return { supabase, user, profile };
 }
 
-export async function generateInviteCodes(input: { count: number; role: "player" | "coach"; maxUses: number }) {
+export async function generateInviteCodes(input: {
+  count: number;
+  role: "player" | "coach";
+  maxUses: number;
+  seasonId?: string;
+}) {
   const ctx = await requireAdmin();
   if ("error" in ctx) return { ok: false as const, error: ctx.error };
   const { supabase, user, profile } = ctx;
@@ -41,6 +46,7 @@ export async function generateInviteCodes(input: { count: number; role: "player"
     role: input.role,
     max_uses: Math.max(1, Math.min(100, input.maxUses)),
     created_by: user.id,
+    season_id: input.seasonId ?? null,
   }));
 
   const { error, data } = await supabase.from("invite_codes").insert(rows).select("code");
@@ -66,19 +72,15 @@ export async function resolveDispute(matchId: string, decision: "confirm" | "rej
   return { ok: true as const };
 }
 
-export async function startNewSeason(name: string) {
+export async function createPyramid(name: string) {
   const ctx = await requireAdmin();
   if ("error" in ctx) return { ok: false as const, error: ctx.error };
   const { supabase, profile } = ctx;
-  await supabase
+  const { error } = await supabase
     .from("seasons")
-    .update({ is_active: false, ends_at: new Date().toISOString() })
-    .eq("club_id", profile.club_id)
-    .eq("is_active", true);
-  const { error } = await supabase.from("seasons").insert({ club_id: profile.club_id, name, is_active: true });
+    .insert({ club_id: profile.club_id, name, is_active: true });
   if (error) return { ok: false as const, error: error.message };
   revalidatePath("/coach");
-  revalidatePath("/ranking");
   return { ok: true as const };
 }
 

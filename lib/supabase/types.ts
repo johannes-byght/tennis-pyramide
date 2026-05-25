@@ -7,6 +7,7 @@ export type Json = string | number | boolean | null | { [key: string]: Json } | 
 export type Profile = {
   id: string;
   club_id: string;
+  season_id: string | null;
   nickname: string;
   initials: string | null;
   age_group: "U12" | "U14" | "U16" | "U18" | "open" | null;
@@ -53,6 +54,7 @@ export type LadderPosition = {
 export type Challenge = {
   id: string;
   club_id: string;
+  season_id: string | null;
   challenger_id: string;
   opponent_id: string;
   proposed_at: string | null;
@@ -128,6 +130,7 @@ export type Notification = {
 export type InviteCode = {
   code: string;
   club_id: string;
+  season_id: string | null;
   role: "player" | "coach";
   max_uses: number;
   used_count: number;
