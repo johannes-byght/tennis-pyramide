@@ -85,6 +85,34 @@ export type MatchWithProfiles = Match & {
   loser: Pick<Profile, "id" | "nickname" | "avatar_seed">;
 };
 
+export type ChallengeFeedItem = {
+  id: string;
+  status: "pending" | "accepted" | "countered";
+  proposed_at: string | null;
+  counter_proposed_at: string | null;
+  created_at: string;
+  responded_at: string | null;
+  challenger: Pick<Profile, "id" | "nickname" | "avatar_seed">;
+  opponent: Pick<Profile, "id" | "nickname" | "avatar_seed">;
+};
+
+export async function fetchRecentChallengeEvents(clubId: string, limit = 20): Promise<ChallengeFeedItem[]> {
+  const supabase = await createClient();
+  const { data, error } = await supabase
+    .from("challenges")
+    .select(
+      `id, status, proposed_at, counter_proposed_at, created_at, responded_at,
+       challenger:profiles!challenges_challenger_id_fkey(id, nickname, avatar_seed),
+       opponent:profiles!challenges_opponent_id_fkey(id, nickname, avatar_seed)`,
+    )
+    .eq("club_id", clubId)
+    .in("status", ["pending", "accepted", "countered"])
+    .order("created_at", { ascending: false })
+    .limit(limit);
+  if (error) throw error;
+  return (data ?? []) as unknown as ChallengeFeedItem[];
+}
+
 export async function fetchRecentMatches(clubId: string, limit = 30): Promise<MatchWithProfiles[]> {
   const supabase = await createClient();
   const { data, error } = await supabase

@@ -3,19 +3,53 @@ import { Avatar } from "@/components/ui/avatar";
 import { Badge } from "@/components/ui/badge";
 import { Card, CardBody } from "@/components/ui/card";
 import { PageHeader } from "@/components/page-header";
-import { fetchMatchesNeedingMyAction, fetchRecentMatches, requireMe, type MatchWithProfiles } from "@/lib/data";
+import {
+  fetchMatchesNeedingMyAction,
+  fetchRecentChallengeEvents,
+  fetchRecentMatches,
+  requireMe,
+  type ChallengeFeedItem,
+  type MatchWithProfiles,
+} from "@/lib/data";
 import { progressToNextLevel } from "@/lib/achievements";
 import { formatRelative } from "@/lib/utils";
 import { NickEgg } from "./nick-egg";
 
+function formatDate(iso: string): string {
+  return new Date(iso).toLocaleString("de-DE", {
+    weekday: "short",
+    day: "numeric",
+    month: "short",
+    hour: "2-digit",
+    minute: "2-digit",
+    hour12: false,
+  });
+}
+
+type FeedItem =
+  | { kind: "match"; data: MatchWithProfiles; ts: string }
+  | { kind: "challenge"; data: ChallengeFeedItem; ts: string };
+
 export default async function FeedPage() {
   const me = await requireMe();
   const isPlayer = me.profile.role === "player";
-  const [recent, pendingMine] = await Promise.all([
+  const [recent, challenges, pendingMine] = await Promise.all([
     fetchRecentMatches(me.profile.club_id, 25),
+    fetchRecentChallengeEvents(me.profile.club_id, 20),
     isPlayer ? fetchMatchesNeedingMyAction(me.profile.id) : Promise.resolve([]),
   ]);
   const lvl = isPlayer ? progressToNextLevel(me.profile.total_xp) : null;
+
+  const feedItems: FeedItem[] = [
+    ...recent.map((m) => ({ kind: "match" as const, data: m, ts: m.played_at })),
+    ...challenges.map((c) => ({
+      kind: "challenge" as const,
+      data: c,
+      ts: c.status === "accepted" ? (c.responded_at ?? c.created_at) : c.created_at,
+    })),
+  ]
+    .sort((a, b) => new Date(b.ts).getTime() - new Date(a.ts).getTime())
+    .slice(0, 30);
 
   return (
     <main>
@@ -87,17 +121,21 @@ export default async function FeedPage() {
 
       <section className="px-5 mt-5">
         <h2 className="font-display text-lg mb-2">Vereins-Feed</h2>
-        {recent.length === 0 ? (
+        {feedItems.length === 0 ? (
           <Card>
             <CardBody className="text-sm text-muted text-center py-6">
-              Noch keine Matches gespielt. Sei der Erste! 🎾
+              Noch keine Aktivität. Sei der Erste! 🎾
             </CardBody>
           </Card>
         ) : (
           <div className="space-y-2">
-            {recent.map((m) => (
-              <FeedMatch key={m.id} match={m} />
-            ))}
+            {feedItems.map((item) =>
+              item.kind === "match" ? (
+                <FeedMatch key={`m-${item.data.id}`} match={item.data} />
+              ) : (
+                <FeedChallenge key={`c-${item.data.id}`} challenge={item.data} />
+              ),
+            )}
           </div>
         )}
       </section>
@@ -134,6 +172,71 @@ function FeedMatch({ match }: { match: MatchWithProfiles }) {
             🪜 Aufstieg
           </Badge>
         )}
+      </CardBody>
+    </Card>
+  );
+}
+
+function FeedChallenge({ challenge: c }: { challenge: ChallengeFeedItem }) {
+  const matchDate = c.counter_proposed_at ?? c.proposed_at;
+
+  if (c.status === "accepted") {
+    return (
+      <Card className="border-court-200 dark:border-court-700">
+        <CardBody className="flex items-center gap-3">
+          <div className="flex items-center -space-x-2">
+            <Avatar seed={c.challenger.avatar_seed} size={40} ring />
+            <Avatar seed={c.opponent.avatar_seed} size={40} ring />
+          </div>
+          <div className="flex-1 min-w-0 text-sm">
+            <div>
+              <Link href={`/profile/${c.challenger.id}`} className="font-semibold hover:underline">
+                {c.challenger.nickname}
+              </Link>{" "}
+              <span className="text-muted">vs</span>{" "}
+              <Link href={`/profile/${c.opponent.id}`} className="font-semibold hover:underline">
+                {c.opponent.nickname}
+              </Link>
+            </div>
+            {matchDate ? (
+              <div className="text-xs text-court-700 dark:text-court-300 font-medium mt-0.5">
+                Match am {formatDate(matchDate)}
+              </div>
+            ) : (
+              <div className="text-xs text-muted mt-0.5">Termin noch offen</div>
+            )}
+            <div className="text-[11px] text-muted mt-0.5">{formatRelative(c.responded_at ?? c.created_at)}</div>
+          </div>
+          <Badge variant="court">Match geplant</Badge>
+        </CardBody>
+      </Card>
+    );
+  }
+
+  return (
+    <Card className="opacity-80">
+      <CardBody className="flex items-center gap-3">
+        <div className="flex items-center -space-x-2">
+          <Avatar seed={c.challenger.avatar_seed} size={40} ring />
+          <Avatar seed={c.opponent.avatar_seed} size={32} />
+        </div>
+        <div className="flex-1 min-w-0 text-sm">
+          <div>
+            <Link href={`/profile/${c.challenger.id}`} className="font-semibold hover:underline">
+              {c.challenger.nickname}
+            </Link>{" "}
+            <span className="text-muted">fordert</span>{" "}
+            <Link href={`/profile/${c.opponent.id}`} className="font-medium hover:underline">
+              {c.opponent.nickname}
+            </Link>{" "}
+            <span className="text-muted">heraus</span>
+          </div>
+          {c.proposed_at && (
+            <div className="text-xs text-muted mt-0.5">Vorschlag: {formatDate(c.proposed_at)}</div>
+          )}
+          <div className="text-[11px] text-muted mt-0.5">{formatRelative(c.created_at)}</div>
+        </div>
+        <Badge variant="muted">{c.status === "countered" ? "Gegenvorschlag" : "Offen"}</Badge>
       </CardBody>
     </Card>
   );
