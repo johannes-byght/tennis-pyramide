@@ -87,10 +87,11 @@ export default async function RankingPage() {
           <CardBody className="text-xs text-muted space-y-1">
             <p>
               <strong>So funktioniert die Pyramide:</strong> Du kannst Spieler:innen aus deiner
-              eigenen Reihe oder genau einer Reihe darüber herausfordern.
+              eigenen Reihe (die vor dir stehen) oder genau einer Reihe darüber herausfordern.
             </p>
             <p>
-              Gewinnst du gegen jemanden über dir, tauscht ihr die Plätze.
+              Gewinnst du, tauscht ihr die Plätze — egal ob der Gegner in deiner Reihe oder der
+              darüber steht.
             </p>
           </CardBody>
         </Card>

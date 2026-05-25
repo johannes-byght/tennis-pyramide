@@ -17,13 +17,17 @@ export function nextBottomSlot(filled: Slot[]): Slot {
 
 /**
  * Darf `challenger` `opponent` herausfordern?
- * Erlaubt: gleiche Reihe ODER eine Reihe darüber (= row-1 des Gegners).
+ * Erlaubt:
+ *   - Eine Reihe darüber (challenger.row = opponent.row - 1)
+ *   - Gleiche Reihe, aber nur vorwärts (challenger.col > opponent.col)
  * Coaches haben gar keinen Slot → sind hier nicht spielberechtigt.
  */
 export function canChallenge(challenger: Slot | null, opponent: Slot | null): boolean {
   if (!challenger || !opponent) return false;
   if (challenger.row === opponent.row && challenger.col === opponent.col) return false;
-  return challenger.row === opponent.row || challenger.row === opponent.row + 1;
+  if (challenger.row === opponent.row + 1) return true;
+  if (challenger.row === opponent.row && challenger.col > opponent.col) return true;
+  return false;
 }
 
 /**
