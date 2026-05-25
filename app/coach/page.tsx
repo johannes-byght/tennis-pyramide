@@ -8,6 +8,7 @@ import { TabBar } from "@/components/tab-bar";
 import { createClient } from "@/lib/supabase/server";
 import { fetchClub, fetchClubMembers, fetchPyramids, requireMe } from "@/lib/data";
 import { AdminToggle } from "./admin-toggle";
+import { CodeList } from "./code-list";
 import { GenerateCodes } from "./generate-codes";
 import { DisputeActions } from "./dispute-actions";
 import { NewSeasonForm } from "./new-season-form";
@@ -94,19 +95,7 @@ export default async function CoachPage() {
           <CardBody className="space-y-3">
             <h2 className="font-display text-lg">Einladungscodes</h2>
             <GenerateCodes pyramids={pyramids} />
-            <ul className="space-y-1 text-sm">
-              {codeRows.map((c) => (
-                <li
-                  key={c.code}
-                  className="flex items-center justify-between gap-2 rounded-pill bg-sand-50 dark:bg-court-800/30 px-3 py-2"
-                >
-                  <span className="font-mono">{c.code}</span>
-                  <span className="text-xs text-muted">
-                    {c.pyramid?.name ?? c.role} · {c.used_count}/{c.max_uses}
-                  </span>
-                </li>
-              ))}
-            </ul>
+            <CodeList codes={codeRows} />
           </CardBody>
         </Card>
 
