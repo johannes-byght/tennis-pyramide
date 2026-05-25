@@ -2,25 +2,60 @@ import Link from "next/link";
 import { Avatar } from "@/components/ui/avatar";
 import { Card, CardBody } from "@/components/ui/card";
 import { PageHeader } from "@/components/page-header";
-import { fetchLadder, requireMe } from "@/lib/data";
+import { fetchLadder, fetchPyramids, requireMe } from "@/lib/data";
+import type { Season } from "@/lib/supabase/types";
 import { groupByRow } from "@/lib/ladder";
 import { cn } from "@/lib/utils";
 
-export default async function RankingPage() {
+export default async function RankingPage(props: { searchParams: Promise<{ p?: string }> }) {
   const me = await requireMe();
-  if (!me.activeSeason) {
+  const isCoach = me.profile.role === "coach" || me.profile.is_admin;
+
+  let activeSeason: Season | null = me.activeSeason;
+  let pyramids: Season[] = [];
+
+  if (isCoach) {
+    pyramids = await fetchPyramids(me.profile.club_id);
+    const params = await props.searchParams;
+    const selectedId = params.p ?? pyramids[0]?.id;
+    activeSeason = pyramids.find((p) => p.id === selectedId) ?? pyramids[0] ?? null;
+  }
+
+  if (!activeSeason) {
     return (
       <main className="px-5">
-        <PageHeader title="Pyramide" subtitle="Aktuell läuft keine Saison." />
+        <PageHeader title="Pyramide" subtitle={isCoach ? "Noch keine Pyramide angelegt." : "Aktuell läuft keine Saison."} />
       </main>
     );
   }
-  const ladder = await fetchLadder(me.activeSeason.id);
+
+  const ladder = await fetchLadder(activeSeason.id);
   const rows = groupByRow(ladder);
 
   return (
     <main>
-      <PageHeader title="Pyramide" subtitle={me.activeSeason.name} />
+      <PageHeader title={activeSeason.name} subtitle={isCoach ? "Trainer-Ansicht" : undefined} />
+
+      {isCoach && pyramids.length > 1 && (
+        <section className="px-5 mb-3">
+          <div className="flex gap-2 flex-wrap">
+            {pyramids.map((p) => (
+              <Link
+                key={p.id}
+                href={`/ranking?p=${p.id}`}
+                className={cn(
+                  "rounded-pill px-4 py-1.5 text-sm font-medium border transition",
+                  p.id === activeSeason!.id
+                    ? "bg-court-600 text-white border-court-600"
+                    : "bg-card border-border text-muted",
+                )}
+              >
+                {p.name}
+              </Link>
+            ))}
+          </div>
+        </section>
+      )}
 
       <section className="px-3 space-y-3">
         {rows.length === 0 ? (
@@ -33,7 +68,7 @@ export default async function RankingPage() {
               {row.map((p) => {
                 const isMe = p.profile_id === me.profile.id;
                 const onTop = p.row === 1;
-                const rank = p.row * (p.row - 1) / 2 + p.col;
+                const rank = (p.row * (p.row - 1)) / 2 + p.col;
                 return (
                   <Link
                     key={p.profile_id}
@@ -50,10 +85,7 @@ export default async function RankingPage() {
                       <div className="relative">
                         <Avatar seed={p.avatar_seed} size={44} ring={isMe} initials={p.initials} />
                         {onTop ? (
-                          <span
-                            aria-label="Spitzenposition"
-                            className="absolute -top-2 -right-2 text-base"
-                          >
+                          <span aria-label="Spitzenposition" className="absolute -top-2 -right-2 text-base">
                             👑
                           </span>
                         ) : (
@@ -87,20 +119,22 @@ export default async function RankingPage() {
         )}
       </section>
 
-      <section className="px-5 mt-6">
-        <Card>
-          <CardBody className="text-xs text-muted space-y-1">
-            <p>
-              <strong>So funktioniert die Pyramide:</strong> Du kannst Spieler:innen aus deiner
-              eigenen Reihe (die vor dir stehen) oder genau einer Reihe darüber herausfordern.
-            </p>
-            <p>
-              Gewinnst du, tauscht ihr die Plätze — egal ob der Gegner in deiner Reihe oder der
-              darüber steht.
-            </p>
-          </CardBody>
-        </Card>
-      </section>
+      {!isCoach && (
+        <section className="px-5 mt-6">
+          <Card>
+            <CardBody className="text-xs text-muted space-y-1">
+              <p>
+                <strong>So funktioniert die Pyramide:</strong> Du kannst Spieler:innen aus deiner
+                eigenen Reihe (die vor dir stehen) oder genau einer Reihe darüber herausfordern.
+              </p>
+              <p>
+                Gewinnst du, tauscht ihr die Plätze — egal ob der Gegner in deiner Reihe oder der
+                darüber steht.
+              </p>
+            </CardBody>
+          </Card>
+        </section>
+      )}
     </main>
   );
 }
